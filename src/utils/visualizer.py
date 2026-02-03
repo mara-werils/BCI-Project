@@ -3,7 +3,7 @@ import os
 import sys
 import ntpath
 import time
-from . import src.utils, html
+from . import util, html
 from subprocess import Popen, PIPE
 
 

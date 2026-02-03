@@ -9,6 +9,14 @@ import argparse
 import torch
 import torchvision.transforms as transforms
 import numpy as np
+import ssl
+try:
+    _create_unverified_https_context = ssl._create_unverified_context
+except AttributeError:
+    pass
+else:
+    ssl._create_default_https_context = _create_unverified_https_context
+
 from src.metrics.lpips_metric import LPIPSMetric
 
 def parse_opt():
@@ -63,7 +71,7 @@ def evaluate_metrics(result_path, use_gpu=True):
                 # PSNR & SSIM (using numpy/skimage)
                 PSNR = peak_signal_noise_ratio(fake, real)
                 psnr.append(PSNR)
-                SSIM = structural_similarity(fake, real, multichannel=True)
+                SSIM = structural_similarity(fake, real, channel_axis=-1)
                 ssim.append(SSIM)
                 
                 # LPIPS (using torch)

@@ -28,7 +28,7 @@ def visualize_uncertainty():
     model.setup(opt)
     
     # We want to use dropout, so ensure we are in train mode or force dropout
-    model.train() 
+    model.netG.train() 
     
     save_dir = os.path.join(opt.results_dir, opt.name, 'uncertainty')
     os.makedirs(save_dir, exist_ok=True)
