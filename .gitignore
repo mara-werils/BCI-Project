@@ -12,7 +12,7 @@ venv/
 *.pth
 *.pt
 checkpoints/
-results/
+# results/
 datasets/
 imgs/
 models/*.pth
