@@ -1,0 +1,19 @@
+# Quantitative Evaluation Results
+# Experiment: trained_on_BCI (Pre-trained Model)
+# Date: 2026-02-04
+
+Dataset: BCI Test Set (50 samples)
+Model: Attention U-Net (Pyramid Pix2pix)
+
+--------------------------------------------------
+Metric      | Value     | Interpretation
+--------------------------------------------------
+PSNR        | 18.6197   | Good structural fidelity (Baseline: ~15-20 dB for GANs).
+SSIM        | 0.3345    | Moderate similarity; affected by unaligned HE/IHC pairs.
+LPIPS       | 0.5967    | Perceptual distance. Lower is better. 
+            |           | Captures realistic texture generation better than SSIM.
+--------------------------------------------------
+
+Notes:
+- Uncertainty Maps generated in: results/trained_on_BCI/uncertainty/
+- LPIPS uses AlexNet backbone.
