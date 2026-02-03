@@ -1,0 +1,24 @@
+# Additional requirements for Transfer Learning experiments
+# Install with: pip install -r requirements_extra.txt
+
+# Metrics
+scikit-image>=0.19.0
+scikit-learn>=1.0.0
+
+# Visualization
+matplotlib>=3.5.0
+seaborn>=0.12.0
+
+# Jupyter
+jupyter>=1.0.0
+notebook>=6.4.0
+ipywidgets>=7.6.0
+
+# Data processing
+pandas>=1.4.0
+numpy>=1.21.0
+
+# Progress bars
+tqdm>=4.62.0
+
+

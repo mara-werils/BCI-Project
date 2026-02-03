@@ -1,0 +1,40 @@
+# BCI Training Configuration
+
+# Experiment setup
+name: "bci_experiment_v1"
+gpu_ids: [0]
+checkpoints_dir: "./checkpoints"
+
+# Data
+dataroot: "./datasets/BCI"
+dataset_mode: "aligned" # or unaligned, single
+direction: "AtoB" # A = HE, B = IHC
+batch_size: 1
+load_size: 286
+crop_size: 256
+preprocess: "resize_and_crop" # scale_width, crop, none
+
+# Model
+model: "pix2pix" # or cycle_gan, pyramid_pix2pix
+input_nc: 3
+output_nc: 3
+ngf: 64
+ndf: 64
+n_layers_D: 3
+norm: "batch"
+init_type: "normal"
+init_gain: 0.02
+
+# Training
+n_epochs: 100
+n_epochs_decay: 100
+lr: 0.0002
+beta1: 0.5
+pool_size: 50 # for cyclegan image pool
+gan_mode: "vanilla" # lsgan, wgangp
+
+# Visualization
+display_freq: 400
+print_freq: 100
+save_latest_freq: 5000
+save_epoch_freq: 5

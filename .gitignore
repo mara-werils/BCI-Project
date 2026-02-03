@@ -1,0 +1,30 @@
+__pycache__/
+*.py[cod]
+*$py.class
+.DS_Store
+.env
+.venv/
+env/
+venv/
+*.swp
+
+# PyTorch
+*.pth
+*.pt
+checkpoints/
+results/
+datasets/
+imgs/
+models/*.pth
+src/models/*.pth
+
+# Large Data
+BCI_dataset/
+BCI_dataset_small_10pct/
+BCI_dataset_small_20pct/
+BCI_dataset_small_50pct/
+*.pdf
+
+# IDE
+.idea/
+.vscode/
