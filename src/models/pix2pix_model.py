@@ -96,11 +96,17 @@ class Pix2PixModel(BaseModel):
         else:  # during test time, only load G
             self.model_names = ['G']
         # define networks (both generator and discriminator)
-        self.netG = networks.define_G(opt.input_nc, opt.output_nc, opt.ngf, opt.netG, opt.norm,
+        # For conditional GAN: Generator input = RGB (3) + one-hot class (4) = 7 channels
+        self.use_conditional = opt.use_conditional if hasattr(opt, 'use_conditional') else False
+        num_classes = opt.num_classes if hasattr(opt, 'num_classes') else 4
+        input_nc_G = opt.input_nc + num_classes if self.use_conditional else opt.input_nc
+        self.netG = networks.define_G(input_nc_G, opt.output_nc, opt.ngf, opt.netG, opt.norm,
                                       not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
 
         if self.isTrain:  # define a discriminator; conditional GANs need to take both input and output images; Therefore, #channels for D is input_nc + output_nc
-            self.netD = networks.define_D(opt.input_nc + opt.output_nc, opt.ndf, opt.netD,
+            # For conditional GAN: Discriminator input = input (3) + output (3) + class (4) = 10 channels
+            input_nc_D = opt.input_nc + opt.output_nc + num_classes if self.use_conditional else opt.input_nc + opt.output_nc
+            self.netD = networks.define_D(input_nc_D, opt.ndf, opt.netD,
                                           opt.n_layers_D, opt.norm, opt.init_type, opt.init_gain, self.gpu_ids)
             if opt.netD == 'conv':
                 prenet = torch.load('src/models/vgg19_conv.pth')
@@ -131,13 +137,38 @@ class Pix2PixModel(BaseModel):
         self.real_A = input['A' if AtoB else 'B'].to(self.device)
         self.real_B = input['B' if AtoB else 'A'].to(self.device)
         self.image_paths = input['A_paths' if AtoB else 'B_paths']
+        
+        # Extract class label if available
+        if 'class_label' in input:
+            self.class_label = input['class_label'].to(self.device)
+        else:
+            # Default to class 0 if not provided (for backwards compatibility)
+            self.class_label = torch.zeros(self.real_A.size(0), dtype=torch.long).to(self.device)
+        
         if 'mask' in self.opt.pattern:
             self.mask = input['mask'].to(self.device)
             self.mask = 0.5 * self.mask + 1.5
 
     def forward(self):
         """Run forward pass; called by both functions <optimize_parameters> and <test>."""
-        self.fake_B = self.netG(self.real_A)  # G(A)
+        if self.use_conditional:
+            # For conditional GAN: create one-hot encoded class labels and tile spatially
+            # Class labels: 0, 1+, 2+, 3+ -> 4 classes
+            num_classes = 4
+            batch_size = self.real_A.size(0)
+            h, w = self.real_A.size(2), self.real_A.size(3)
+            
+            # One-hot encode the class labels
+            class_one_hot = torch.nn.functional.one_hot(self.class_label, num_classes=num_classes).float()  # (B, 4)
+            # Expand to spatial dimensions (B, 4, H, W)
+            class_one_hot = class_one_hot.view(batch_size, num_classes, 1, 1).expand(batch_size, num_classes, h, w)
+            
+            # Concatenate class info with input image
+            real_A_with_class = torch.cat([self.real_A, class_one_hot], dim=1)  # (B, 3+4, H, W)
+            self.fake_B = self.netG(real_A_with_class)  # G(A, class)
+        else:
+            # Standard Pix2Pix without class conditioning
+            self.fake_B = self.netG(self.real_A)  # G(A)
 
     def get_ctx_loss(self, source, target):
         contextual_style5_1 = torch.mean(self.contextual_forward_loss(source[-1], target[-1].detach())) * 8
@@ -224,16 +255,26 @@ class Pix2PixModel(BaseModel):
             fake_feature = self.netD(self.fake_B)
             real_feature = self.netD(self.real_B)
             self.loss_D = - self.criterionL1(fake_feature.detach(), real_feature) * self.opt.weight_conv
-        else:    
-            # Fake; stop backprop to the generator by detaching fake_B
-            fake_AB = torch.cat((self.real_A, self.fake_B), 1)  # we use conditional GANs; we need to feed both input and output to the discriminator
+        else:
+            if self.use_conditional:
+                # For conditional GAN: include class labels in discriminator input
+                num_classes = 4
+                batch_size = self.real_A.size(0)
+                h, w = self.real_A.size(2), self.real_A.size(3)
+                class_one_hot = torch.nn.functional.one_hot(self.class_label, num_classes=num_classes).float()
+                class_one_hot = class_one_hot.view(batch_size, num_classes, 1, 1).expand(batch_size, num_classes, h, w)
+                
+                fake_AB = torch.cat((self.real_A, self.fake_B, class_one_hot), 1)
+                real_AB = torch.cat((self.real_A, self.real_B, class_one_hot), 1)
+            else:
+                # Standard Pix2Pix
+                fake_AB = torch.cat((self.real_A, self.fake_B), 1)
+                real_AB = torch.cat((self.real_A, self.real_B), 1)
+            
             pred_fake = self.netD(fake_AB.detach())
             self.loss_D_fake = self.criterionGAN(pred_fake, False)
-            # Real
-            real_AB = torch.cat((self.real_A, self.real_B), 1)
             pred_real = self.netD(real_AB)
             self.loss_D_real = self.criterionGAN(pred_real, True)
-            # combine loss and calculate gradients
             self.loss_D = (self.loss_D_fake + self.loss_D_real) * 0.5
         self.loss_D.backward()
 
@@ -247,7 +288,18 @@ class Pix2PixModel(BaseModel):
                 real_feature = self.netD(self.real_B)
                 self.loss_G_GAN = self.criterionL1(fake_feature, real_feature) * self.opt.weight_conv
             else:
-                fake_AB = torch.cat((self.real_A, self.fake_B), 1)
+                if self.use_conditional:
+                    # For conditional GAN: include class labels
+                    num_classes = 4
+                    batch_size = self.real_A.size(0)
+                    h, w = self.real_A.size(2), self.real_A.size(3)
+                    class_one_hot = torch.nn.functional.one_hot(self.class_label, num_classes=num_classes).float()
+                    class_one_hot = class_one_hot.view(batch_size, num_classes, 1, 1).expand(batch_size, num_classes, h, w)
+                    fake_AB = torch.cat((self.real_A, self.fake_B, class_one_hot), 1)
+                else:
+                    # Standard Pix2Pix
+                    fake_AB = torch.cat((self.real_A, self.fake_B), 1)
+                
                 pred_fake = self.netD(fake_AB)
                 self.loss_G_GAN = self.criterionGAN(pred_fake, True)
             self.loss_G += self.loss_G_GAN

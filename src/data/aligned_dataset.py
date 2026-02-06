@@ -55,13 +55,33 @@ class AlignedDataset(BaseDataset):
         A = A_transform(A)
         B = B_transform(B)
 
+        # Extract HER2 class from filename
+        # Format: 00000_train_1+.png -> class label is '1+'
+        # Classes: 0, 1+, 2+, 3+ (4 classes total)
+        import re
+        basename = os.path.basename(AB_path)
+        # Use regex to extract the class label (e.g., '0', '1+', '2+', '3+')
+        match = re.search(r'_(0|1\+|2\+|3\+)\.png$', basename)
+        
+        if match:
+            class_str = match.group(1)
+            # Map to integer: 0->0, 1+->1, 2+->2, 3+->3
+            class_map = {'0': 0, '1+': 1, '2+': 2, '3+': 3}
+            class_idx = class_map.get(class_str, 0)  # Default to 0 if not found
+        else:
+            class_idx = 0  # Default class if parsing fails
+        
+        # Convert to tensor (will be used as index for one-hot encoding in model)
+        import torch
+        class_label = torch.tensor(class_idx, dtype=torch.long)
+
         if 'mask' in self.opt.pattern:
             mask_path = self.mask_paths[index]
             mask = Image.open(mask_path).convert('RGB')
             mask = B_transform(mask)
-            return {'A': A, 'B': B, 'A_paths': AB_path, 'B_paths': AB_path, 'mask': mask}
+            return {'A': A, 'B': B, 'A_paths': AB_path, 'B_paths': AB_path, 'mask': mask, 'class_label': class_label}
 
-        return {'A': A, 'B': B, 'A_paths': AB_path, 'B_paths': AB_path}
+        return {'A': A, 'B': B, 'A_paths': AB_path, 'B_paths': AB_path, 'class_label': class_label}
 
     def __len__(self):
         """Return the total number of images in the dataset."""

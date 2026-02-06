@@ -56,6 +56,9 @@ class BaseOptions():
         parser.add_argument('--suffix', default='', type=str, help='customized suffix: opt.name = opt.name + suffix: e.g., {model}_{netG}_size{load_size}')
         # 模式选择
         parser.add_argument('--pattern', type=str, default='L1_L2_L3_L4', help='L1 | L2 | L3 | L4 |')
+        # Conditional GAN
+        parser.add_argument('--use_conditional', action='store_true', help='Use conditional GAN with HER2 class labels')
+        parser.add_argument('--num_classes', type=int, default=4, help='Number of classes for conditional GAN (0, 1+, 2+, 3+)')
 
         self.initialized = True
         return parser
@@ -133,7 +136,7 @@ class BaseOptions():
             id = int(str_id)
             if id >= 0:
                 opt.gpu_ids.append(id)
-        if len(opt.gpu_ids) > 0:
+        if len(opt.gpu_ids) > 0 and torch.cuda.is_available():
             torch.cuda.set_device(opt.gpu_ids[0])
 
         self.opt = opt

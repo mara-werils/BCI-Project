@@ -1,0 +1,35 @@
+======================================================================
+BCI PROJECT - QUANTITATIVE EVALUATION REPORT
+======================================================================
+
+Generated: 2026-02-05 21:43:11
+
+EXPERIMENT DETAILS
+----------------------------------------------------------------------
+Model Name:        trained_on_BCI
+Generator:         attention_unet_32
+Dataset:           ./datasets/BCI
+Test Samples:      100
+Input Channels:    3
+Output Channels:   3
+
+QUANTITATIVE RESULTS
+----------------------------------------------------------------------
+PSNR (Peak Signal-to-Noise Ratio)
+  Mean:            17.3974 dB
+  Std Dev:         3.6603 dB
+  Min:             7.4448 dB
+  Max:             26.1425 dB
+
+SSIM (Structural Similarity Index)
+  Mean:            0.3841
+  Std Dev:         0.1486
+  Min:             0.0835
+  Max:             0.9032
+
+INTERPRETATION
+----------------------------------------------------------------------
+PSNR: Higher is better. >18 dB is good for medical image translation.
+SSIM: Range [0, 1]. Higher is better. >0.3 is acceptable for GANs.
+
+======================================================================
