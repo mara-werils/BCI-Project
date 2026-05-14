@@ -10,7 +10,7 @@
 
 ---
 
-## 🔬 Scientific Enhancements
+## Scientific Enhancements
 
 ### 1. Uncertainty Quantification (Clinical Trust)
 In medical imaging, a generative model must be trustworthy. We implement **Monte Carlo Dropout** inference to generate **Uncertainty Maps**.
@@ -27,7 +27,7 @@ Standard PSNR/SSIM metrics favor blurry images. We integrate **LPIPS (Learned Pe
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Installation
 ```bash
@@ -57,7 +57,7 @@ Results will be saved in `results/bci_experiment_v1/uncertainty/`.
 
 ---
 
-## 📂 Repository Structure
+## Repository Structure
 
 ```
 ├── configs/             # Configuration files
@@ -72,7 +72,7 @@ Results will be saved in `results/bci_experiment_v1/uncertainty/`.
 └── train_net.py         # Main entry point
 ```
 
-## 📜 Citation
+## Citation
 
 If you use this enhanced repository, please cite the original paper and this implementation:
 
